@@ -890,3 +890,33 @@ def increment_path(path, exist_ok=True, sep=''):
         i = [int(m.groups()[0]) for m in matches if m]  # indices
         n = max(i) + 1 if i else 2  # increment number
         return f"{path}{sep}{n}"  # update path
+
+#SWC Function
+import imageio
+import re
+import glob
+import numpy as np
+
+numbers = re.compile(r'(\d+)')
+def numericalSort(value):
+    parts = numbers.split(value)
+    parts[1::2] = map(int, parts[1::2])
+    return parts
+
+def imagestack_to_video(vid_dir: str, save_path: str, fps:int=30):
+    '''
+    Read in PNGs saved after YOLO detection and generate a .avi video.
+    image_stack: np.array of shape [n_frames, height, width, channels]
+    save_path: path to folder to save video.
+    fps: frames/second of the produced video.
+    '''
+    IMAGEDIR = sorted(glob.glob(vid_dir + '*.png'), key=numericalSort)
+    image_stack = np.stack([np.array(imageio.imread(image)) for image in IMAGEDIR])
+    #Swap axes from BGR to RGB
+    image_stack = np.concatenate((np.expand_dims(image_stack[:, :, :, 2], axis = 3), np.expand_dims(image_stack[:, :, :, 1], axis = 3), np.expand_dims(image_stack[:, :, :, 0], axis = 3)), axis = 3)
+    _, height, width, _ = image_stack.shape
+    #Save Videos
+    video = cv2.VideoWriter(save_path.replace('.png', '.avi'), 0, fps, (width, height), isColor=True)
+    for i in range(image_stack.shape[0]):
+        img = image_stack[i]
+        video.write(img)

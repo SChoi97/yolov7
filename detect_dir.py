@@ -7,17 +7,18 @@ import cv2
 import torch
 import torch.backends.cudnn as cudnn
 from numpy import random
+import numpy as np
 
 from models.experimental import attempt_load
 from utils.datasets import LoadStreams, LoadImages, LoadImageDir
 from utils.general import check_img_size, check_requirements, check_imshow, non_max_suppression, apply_classifier, \
-    scale_coords, xyxy2xywh, strip_optimizer, set_logging, increment_path
+    scale_coords, xyxy2xywh, strip_optimizer, set_logging, increment_path, imagestack_to_video
 from utils.plots import plot_one_box
 from utils.torch_utils import select_device, load_classifier, time_synchronized, TracedModel
 
 
 def detect(save_img=False):
-    source, weights, view_img, save_txt, imgsz, trace = opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size, not opt.no_trace
+    source, weights, view_img, save_txt, imgsz, save_type, trace = opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size, opt.save_type, not opt.no_trace
     save_img = not opt.nosave and not source.endswith('.txt')  # save inference images
     webcam = source.isnumeric() or source.endswith('.txt') or source.lower().startswith(
         ('rtsp://', 'rtmp://', 'http://', 'https://'))
@@ -89,13 +90,14 @@ def detect(save_img=False):
         #Create folder for a single image sequence
         #-----------------------------------------
         vid_dir = master_dir + '/' + os.path.split(file_path)[1] + '/'
-        
+        print(vid_dir)
         if os.path.exists(vid_dir):
             print('Folder exists!')
         else:
             os.mkdir(vid_dir)
             os.mkdir(vid_dir + 'labels')
 
+        video_stack = []
         for path, img, im0s, vid_cap in dataset:
             img = torch.from_numpy(img).to(device)
             img = img.half() if half else img.float()  # uint8 to fp16/32
@@ -162,38 +164,16 @@ def detect(save_img=False):
 
                 # Print time (inference + NMS)
                 print(f'{s}Done. ({(1E3 * (t2 - t1)):.1f}ms) Inference, ({(1E3 * (t3 - t2)):.1f}ms) NMS')
-
-                # Stream results
-                if view_img:
-                    cv2.imshow(str(p), im0)
-                    cv2.waitKey(1)  # 1 millisecond
-
-                # Save results (image with detections)
+            
                 if save_img:
-                    if dataset.mode == 'image':
-                        cv2.imwrite(save_path, im0)
-                        print(f" The image with the result is saved in: {save_path}")
-                    else:  # 'video' or 'stream'
-                        if vid_path != save_path:  # new video
-                            vid_path = save_path
-                            if isinstance(vid_writer, cv2.VideoWriter):
-                                vid_writer.release()  # release previous video writer
-                            if vid_cap:  # video
-                                fps = vid_cap.get(cv2.CAP_PROP_FPS)
-                                w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                                h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                            else:  # stream
-                                fps, w, h = 30, im0.shape[1], im0.shape[0]
-                                save_path += '.mp4'
-                            vid_writer = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
-                        vid_writer.write(im0)
+                    cv2.imwrite(save_path, im0)
+                    print(f" The image with the result is saved in: {save_path}")
 
-        # if save_txt or save_img:
-            # s = f"\n{len(list(vid_dir.glob('labels/*.txt')))} labels saved to {vid_dir / 'labels'}" if save_txt else ''
-            #print(f"Results saved to {save_dir}{s}")
-
-    # print(f'Done. ({time.time() - t0:.3f}s)')
-
+            video_stack.append(im0)
+        video_stack = np.stack(video_stack)
+        if save_type == 'video':    
+            print('Saving Video...') 
+            imagestack_to_video(vid_dir=vid_dir, save_path=save_path, fps=15)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -215,6 +195,7 @@ if __name__ == '__main__':
     parser.add_argument('--name', default='exp', help='save results to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--no-trace', action='store_true', help='don`t trace model')
+    parser.add_argument('--save_type', type=str, default='images', help='save as "images" or "video"')
     opt = parser.parse_args()
     print(opt)
     #check_requirements(exclude=('pycocotools', 'thop'))

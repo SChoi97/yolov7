@@ -124,6 +124,19 @@ class _RepeatSampler(object):
         while True:
             yield from iter(self.sampler)
 
+#SWC Edit 21.10.22 to run inference on directories with several folders of time-lapse image sequences.
+def LoadImageDir(dir_path):
+    '''
+    Each experiment produces numerous videos (image sequences).
+    Feed in a directory full of individual folders of image sequences. 
+    Return the equivalent: dir - folder - predictions + labels
+    '''
+    path_list = []
+    for root, dirs, files in os.walk(dir_path, topdown = False):
+        for name in dirs:
+            path_list.append(root + name)
+
+    return path_list
 
 class LoadImages:  # for inference
     def __init__(self, path, img_size=640, stride=32):
