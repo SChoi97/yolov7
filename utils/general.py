@@ -903,20 +903,27 @@ def numericalSort(value):
     parts[1::2] = map(int, parts[1::2])
     return parts
 
-def imagestack_to_video(vid_dir: str, save_path: str, fps:int=30):
+def imagestack_to_video(vid_dir: str, vidname: str, fps:int=30):
     '''
     Read in PNGs saved after YOLO detection and generate a .avi video.
     image_stack: np.array of shape [n_frames, height, width, channels]
     save_path: path to folder to save video.
     fps: frames/second of the produced video.
     '''
+    #Read in images and create a separate save folder for the video
+    vid_save_path = vid_dir + 'video/'
+    if os.path.exists(vid_save_path):
+        print('Folder exists!')
+    else:
+        os.mkdir(vid_save_path)
+    
     IMAGEDIR = sorted(glob.glob(vid_dir + '*.png'), key=numericalSort)
     image_stack = np.stack([np.array(imageio.imread(image)) for image in IMAGEDIR])
     #Swap axes from BGR to RGB
     image_stack = np.concatenate((np.expand_dims(image_stack[:, :, :, 2], axis = 3), np.expand_dims(image_stack[:, :, :, 1], axis = 3), np.expand_dims(image_stack[:, :, :, 0], axis = 3)), axis = 3)
     _, height, width, _ = image_stack.shape
     #Save Videos
-    video = cv2.VideoWriter(save_path.replace('.png', '.avi'), 0, fps, (width, height), isColor=True)
+    video = cv2.VideoWriter(vid_save_path + vidname + '.avi', 0, fps, (width, height), isColor=True)
     for i in range(image_stack.shape[0]):
         img = image_stack[i]
         video.write(img)

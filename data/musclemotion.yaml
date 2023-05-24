@@ -1,0 +1,14 @@
+# LaminAC Test set
+
+# download command/URL (optional)
+# download: bash ./scripts/get_coco.sh
+
+# train and val data as 1) directory: path/images/, 2) file: path/images.txt, or 3) list: [path1/images/, path2/images/]
+train: ./data/musclemotion/set_3_train_png/
+val: ./data/musclemotion/set_3_test_png/
+
+# number of classes
+nc: 1
+
+# class names
+names: ['Post']

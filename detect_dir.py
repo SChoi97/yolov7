@@ -90,7 +90,7 @@ def detect(save_img=False):
         #Create folder for a single image sequence
         #-----------------------------------------
         vid_dir = master_dir + '/' + os.path.split(file_path)[1] + '/'
-        print(vid_dir)
+
         if os.path.exists(vid_dir):
             print('Folder exists!')
         else:
@@ -169,11 +169,10 @@ def detect(save_img=False):
                     cv2.imwrite(save_path, im0)
                     print(f" The image with the result is saved in: {save_path}")
 
-            video_stack.append(im0)
-        video_stack = np.stack(video_stack)
         if save_type == 'video':    
             print('Saving Video...') 
-            imagestack_to_video(vid_dir=vid_dir, save_path=save_path, fps=15)
+            vidname = os.path.split(file_path)[1]
+            imagestack_to_video(vid_dir=vid_dir, vidname=vidname, fps=15)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
